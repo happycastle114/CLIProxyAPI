@@ -1417,7 +1417,28 @@ func (e *AntigravityExecutor) buildRequest(ctx context.Context, auth *cliproxyau
 			payloadStr = string(payload)
 			applied := before != payloadStr
 			obfCount := strings.Count(payloadStr, zeroWidthSpace)
-			log.Infof("antigravity cloak: enabled mode=%s words=%d applied=%t obfuscated_markers=%d", cloakMode, len(sensitiveWords), applied, obfCount)
+
+			// Diagnostics (do not log the sensitive words themselves)
+			authKey := ""
+			hasAttrs := false
+			attrMode := ""
+			attrWords := 0
+			if auth != nil {
+				authKey = auth.ID
+				if len(authKey) > 8 {
+					authKey = authKey[:8]
+				}
+				if len(auth.Attributes) > 0 {
+					hasAttrs = true
+					attrMode = strings.TrimSpace(auth.Attributes["cloak_mode"])
+					if raw := strings.TrimSpace(auth.Attributes["cloak_sensitive_words"]); raw != "" {
+						// Rough count; values are comma-separated.
+						attrWords = len(strings.Split(raw, ","))
+					}
+				}
+			}
+
+			log.Infof("antigravity cloak: auth=%s mode=%s (attr_mode=%s has_attrs=%t attr_words=%d) words=%d applied=%t obfuscated_markers=%d", authKey, cloakMode, attrMode, hasAttrs, attrWords, len(sensitiveWords), applied, obfCount)
 		} else {
 			log.Warnf("antigravity cloak: enabled mode=%s but matcher is nil (words=%d)", cloakMode, len(sensitiveWords))
 		}
