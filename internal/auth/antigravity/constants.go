@@ -61,7 +61,7 @@ func metadataPlatformForRuntime(goos, arch string) string {
 		}
 		return "WINDOWS_AMD64"
 	}
-	return "PLATFORM_UNSPECIFIED"
+	return "DARWIN_ARM64"
 }
 
 func runtimeMetadataPlatform() string {

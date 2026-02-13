@@ -1570,7 +1570,7 @@ func metadataPlatformFromUserAgent(ua string) string {
 	case strings.Contains(uaLower, "linux/"):
 		return "LINUX_AMD64"
 	}
-	return "PLATFORM_UNSPECIFIED"
+	return "DARWIN_ARM64"
 }
 
 func antigravityClientMetadataForUserAgent(ua string) string {

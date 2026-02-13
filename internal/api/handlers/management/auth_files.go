@@ -50,7 +50,7 @@ const (
 	geminiCLIVersion        = "v1internal"
 	geminiCLIUserAgent      = "google-api-nodejs-client/9.15.1"
 	geminiCLIApiClient      = "gl-node/22.17.0"
-	geminiCLIClientMetadata = "ideType=IDE_UNSPECIFIED,platform=PLATFORM_UNSPECIFIED,pluginType=GEMINI"
+	geminiCLIClientMetadata = "ideType=IDE_UNSPECIFIED,platform=DARWIN_ARM64,pluginType=GEMINI"
 )
 
 func geminiCLIMetadataPlatform() string {
@@ -72,7 +72,7 @@ func geminiCLIMetadataPlatform() string {
 	case "windows":
 		return "WINDOWS_AMD64"
 	}
-	return "PLATFORM_UNSPECIFIED"
+	return "DARWIN_ARM64"
 }
 
 func antigravityStyleClientMetadata() map[string]string {
