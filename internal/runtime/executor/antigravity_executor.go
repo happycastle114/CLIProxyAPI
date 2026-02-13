@@ -1550,10 +1550,27 @@ func randomizedAntigravityUserAgent() string {
 }
 
 func metadataPlatformFromUserAgent(ua string) string {
-	if strings.Contains(strings.ToLower(ua), "windows/") {
-		return "WINDOWS"
+	uaLower := strings.ToLower(ua)
+	// Match the platform enums used by Gemini CLI.
+	switch {
+	case strings.Contains(uaLower, "windows/amd64"):
+		return "WINDOWS_AMD64"
+	case strings.Contains(uaLower, "darwin/amd64"):
+		return "DARWIN_AMD64"
+	case strings.Contains(uaLower, "darwin/arm64"):
+		return "DARWIN_ARM64"
+	case strings.Contains(uaLower, "linux/amd64"):
+		return "LINUX_AMD64"
+	case strings.Contains(uaLower, "linux/arm64"):
+		return "LINUX_ARM64"
+	case strings.Contains(uaLower, "windows/"):
+		return "WINDOWS_AMD64"
+	case strings.Contains(uaLower, "darwin/"):
+		return "DARWIN_ARM64"
+	case strings.Contains(uaLower, "linux/"):
+		return "LINUX_AMD64"
 	}
-	return "MACOS"
+	return "PLATFORM_UNSPECIFIED"
 }
 
 func antigravityClientMetadataForUserAgent(ua string) string {

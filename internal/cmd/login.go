@@ -36,8 +36,23 @@ const (
 )
 
 func geminiCLIMetadataPlatform() string {
-	if runtime.GOOS == "windows" {
-		return "WINDOWS"
+	switch runtime.GOOS {
+	case "darwin":
+		switch runtime.GOARCH {
+		case "amd64":
+			return "DARWIN_AMD64"
+		case "arm64":
+			return "DARWIN_ARM64"
+		}
+	case "linux":
+		switch runtime.GOARCH {
+		case "amd64":
+			return "LINUX_AMD64"
+		case "arm64":
+			return "LINUX_ARM64"
+		}
+	case "windows":
+		return "WINDOWS_AMD64"
 	}
 	return "PLATFORM_UNSPECIFIED"
 }

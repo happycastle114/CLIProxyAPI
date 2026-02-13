@@ -37,17 +37,35 @@ const (
 	APIClient    = "google-cloud-sdk vscode_cloudshelleditor/0.1"
 )
 
-func metadataPlatformForGOOS(goos string) string {
-	// Server now expects enum-like platform values in request metadata.
-	// Keep Windows explicit; map all other OSes to UNSPECIFIED for compatibility.
-	if goos == "windows" {
-		return "WINDOWS"
+func metadataPlatformForRuntime(goos, arch string) string {
+	// Mirror Gemini CLI platform enum values.
+	switch goos {
+	case "darwin":
+		switch arch {
+		case "amd64", "x64":
+			return "DARWIN_AMD64"
+		case "arm64":
+			return "DARWIN_ARM64"
+		}
+	case "linux":
+		switch arch {
+		case "amd64", "x64":
+			return "LINUX_AMD64"
+		case "arm64":
+			return "LINUX_ARM64"
+		}
+	case "windows":
+		// Gemini CLI currently enumerates Windows x64 only.
+		if arch == "amd64" || arch == "x64" {
+			return "WINDOWS_AMD64"
+		}
+		return "WINDOWS_AMD64"
 	}
 	return "PLATFORM_UNSPECIFIED"
 }
 
 func runtimeMetadataPlatform() string {
-	return metadataPlatformForGOOS(runtime.GOOS)
+	return metadataPlatformForRuntime(runtime.GOOS, runtime.GOARCH)
 }
 
 var antigravityPlatform = runtimeMetadataPlatform()
