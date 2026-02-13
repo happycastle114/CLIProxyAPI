@@ -38,12 +38,12 @@ const (
 )
 
 func metadataPlatformForGOOS(goos string) string {
-	// Antigravity clients are Windows/macOS-oriented; for non-Windows
-	// environments (including Linux servers), masquerade as macOS.
+	// Server now expects enum-like platform values in request metadata.
+	// Keep Windows explicit; map all other OSes to UNSPECIFIED for compatibility.
 	if goos == "windows" {
 		return "WINDOWS"
 	}
-	return "MACOS"
+	return "PLATFORM_UNSPECIFIED"
 }
 
 func runtimeMetadataPlatform() string {

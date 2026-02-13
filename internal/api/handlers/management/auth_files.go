@@ -57,7 +57,7 @@ func geminiCLIMetadataPlatform() string {
 	if runtime.GOOS == "windows" {
 		return "WINDOWS"
 	}
-	return "MACOS"
+	return "PLATFORM_UNSPECIFIED"
 }
 
 func antigravityStyleClientMetadata() map[string]string {
