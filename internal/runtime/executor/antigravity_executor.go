@@ -1328,6 +1328,7 @@ func (e *AntigravityExecutor) ensureAntigravityProjectID(ctx context.Context, au
 		auth.Metadata = make(map[string]any)
 	}
 	auth.Metadata["project_id"] = strings.TrimSpace(projectID)
+	log.Infof("antigravity executor: fetched project_id %s", auth.Metadata["project_id"])
 
 	return nil
 }

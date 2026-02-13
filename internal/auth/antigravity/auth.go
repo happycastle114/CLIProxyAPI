@@ -153,6 +153,7 @@ func (o *AntigravityAuth) FetchUserInfo(ctx context.Context, accessToken string)
 
 // FetchProjectID retrieves the project ID for the authenticated user via loadCodeAssist
 func (o *AntigravityAuth) FetchProjectID(ctx context.Context, accessToken string) (string, error) {
+	log.Infof("Antigravity: fetching project_id via loadCodeAssist (metadata.platform=%s)", antigravityPlatform)
 	loadReqBody := map[string]any{
 		"metadata": antigravityRequestMetadata(),
 	}
@@ -239,7 +240,7 @@ func (o *AntigravityAuth) FetchProjectID(ctx context.Context, accessToken string
 
 // OnboardUser attempts to fetch the project ID via onboardUser by polling for completion
 func (o *AntigravityAuth) OnboardUser(ctx context.Context, accessToken, tierID string) (string, error) {
-	log.Infof("Antigravity: onboarding user with tier: %s", tierID)
+	log.Infof("Antigravity: onboarding user with tier: %s (metadata.platform=%s)", tierID, antigravityPlatform)
 	requestBody := map[string]any{
 		"tierId": tierID,
 		"metadata": antigravityRequestMetadata(),
