@@ -1322,10 +1322,13 @@ func (e *AntigravityExecutor) buildRequest(ctx context.Context, auth *cliproxyau
 		payloadStr, _ = sjson.Delete(payloadStr, "request.generationConfig.maxOutputTokens")
 	}
 
-	matcher := buildSensitiveWordMatcher(antigravitySensitiveWords(auth))
-	if matcher != nil {
-		payload = obfuscateAntigravityPayload([]byte(payloadStr), matcher)
-		payloadStr = string(payload)
+	cloakMode, _, sensitiveWords := antigravityCloakConfigFromAuth(auth)
+	if shouldCloak(cloakMode, resolveUserAgent(auth)) {
+		matcher := buildSensitiveWordMatcher(sensitiveWords)
+		if matcher != nil {
+			payload = obfuscateAntigravityPayload([]byte(payloadStr), matcher)
+			payloadStr = string(payload)
+		}
 	}
 
 	httpReq, errReq := http.NewRequestWithContext(ctx, http.MethodPost, requestURL.String(), strings.NewReader(payloadStr))

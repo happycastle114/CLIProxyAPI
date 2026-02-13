@@ -11,26 +11,23 @@ import (
 var defaultAntigravitySensitiveWords = []string{
 	"proxy",
 	"openclaw",
+	"OpenClaw",
 	"cliproxy",
 	"cli-proxy",
 }
 
-func antigravitySensitiveWords(auth *cliproxyauth.Auth) []string {
+func antigravityCloakConfigFromAuth(auth *cliproxyauth.Auth) (string, bool, []string) {
+	// Reuse the same auth-attribute parser used by Claude executor.
+	cloakMode, strictMode, sensitiveWords := getCloakConfigFromAuth(auth)
+
 	words := append([]string{}, defaultAntigravitySensitiveWords...)
-	if auth == nil || auth.Attributes == nil {
-		return words
-	}
-	raw := strings.TrimSpace(auth.Attributes["cloak_sensitive_words"])
-	if raw == "" {
-		return words
-	}
-	for _, w := range strings.Split(raw, ",") {
+	for _, w := range sensitiveWords {
 		w = strings.TrimSpace(w)
 		if w != "" {
 			words = append(words, w)
 		}
 	}
-	return words
+	return cloakMode, strictMode, words
 }
 
 func obfuscateAntigravityPayload(payload []byte, matcher *SensitiveWordMatcher) []byte {
