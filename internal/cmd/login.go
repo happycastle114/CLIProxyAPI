@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -33,6 +34,21 @@ const (
 	geminiCLIApiClient      = "gl-node/22.17.0"
 	geminiCLIClientMetadata = "ideType=IDE_UNSPECIFIED,platform=PLATFORM_UNSPECIFIED,pluginType=GEMINI"
 )
+
+func geminiCLIMetadataPlatform() string {
+	if runtime.GOOS == "windows" {
+		return "WINDOWS"
+	}
+	return "MACOS"
+}
+
+func antigravityStyleClientMetadata() map[string]string {
+	return map[string]string{
+		"ideType":    "ANTIGRAVITY",
+		"platform":   geminiCLIMetadataPlatform(),
+		"pluginType": "GEMINI",
+	}
+}
 
 type projectSelectionRequiredError struct{}
 
@@ -184,11 +200,7 @@ func DoLogin(cfg *config.Config, projectID string, options *LoginOptions) {
 }
 
 func performGeminiCLISetup(ctx context.Context, httpClient *http.Client, storage *gemini.GeminiTokenStorage, requestedProject string) error {
-	metadata := map[string]string{
-		"ideType":    "IDE_UNSPECIFIED",
-		"platform":   "PLATFORM_UNSPECIFIED",
-		"pluginType": "GEMINI",
-	}
+	metadata := antigravityStyleClientMetadata()
 
 	trimmedRequest := strings.TrimSpace(requestedProject)
 	explicitProject := trimmedRequest != ""
