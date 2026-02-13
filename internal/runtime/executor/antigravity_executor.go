@@ -58,6 +58,9 @@ var antigravityPlatforms = []string{"windows/amd64", "darwin/arm64", "darwin/amd
 var (
 	randSource      = rand.New(rand.NewSource(time.Now().UnixNano()))
 	randSourceMutex sync.Mutex
+
+	antigravitySlotMu   sync.Mutex
+	antigravitySlotPool = make(map[string]chan struct{})
 )
 
 // AntigravityExecutor proxies requests to the antigravity upstream.
@@ -78,6 +81,39 @@ func NewAntigravityExecutor(cfg *config.Config) *AntigravityExecutor {
 
 // Identifier returns the executor identifier.
 func (e *AntigravityExecutor) Identifier() string { return antigravityAuthType }
+
+func antigravitySlotKey(auth *cliproxyauth.Auth) string {
+	if auth == nil {
+		return "nil"
+	}
+	if idx := strings.TrimSpace(auth.EnsureIndex()); idx != "" {
+		return idx
+	}
+	if auth.ID != "" {
+		return auth.ID
+	}
+	return fmt.Sprintf("%p", auth)
+}
+
+func acquireAntigravitySlot(ctx context.Context, auth *cliproxyauth.Auth) (func(), error) {
+	key := antigravitySlotKey(auth)
+
+	antigravitySlotMu.Lock()
+	slot, ok := antigravitySlotPool[key]
+	if !ok {
+		// Default: serialize requests per credential.
+		slot = make(chan struct{}, 1)
+		antigravitySlotPool[key] = slot
+	}
+	antigravitySlotMu.Unlock()
+
+	select {
+	case slot <- struct{}{}:
+		return func() { <-slot }, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
 
 // PrepareRequest injects Antigravity credentials into the outgoing HTTP request.
 func (e *AntigravityExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
@@ -116,6 +152,13 @@ func (e *AntigravityExecutor) Execute(ctx context.Context, auth *cliproxyauth.Au
 	if opts.Alt == "responses/compact" {
 		return resp, statusErr{code: http.StatusNotImplemented, msg: "/responses/compact not supported"}
 	}
+
+	release, errSlot := acquireAntigravitySlot(ctx, auth)
+	if errSlot != nil {
+		return resp, errSlot
+	}
+	defer release()
+
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 	isClaude := strings.Contains(strings.ToLower(baseModel), "claude")
 
@@ -653,6 +696,17 @@ func (e *AntigravityExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 	if opts.Alt == "responses/compact" {
 		return nil, statusErr{code: http.StatusNotImplemented, msg: "/responses/compact not supported"}
 	}
+
+	release, errSlot := acquireAntigravitySlot(ctx, auth)
+	if errSlot != nil {
+		return nil, errSlot
+	}
+	defer func() {
+		if stream == nil {
+			release()
+		}
+	}()
+
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
 
 	ctx = context.WithValue(ctx, "alt", "")
@@ -701,6 +755,7 @@ attemptLoop:
 		for idx, baseURL := range baseURLs {
 			httpReq, errReq := e.buildRequest(ctx, auth, token, baseModel, translated, true, opts.Alt, baseURL)
 			if errReq != nil {
+				release()
 				err = errReq
 				return nil, err
 			}
@@ -708,6 +763,7 @@ attemptLoop:
 			if errDo != nil {
 				recordAPIResponseError(ctx, e.cfg, errDo)
 				if errors.Is(errDo, context.Canceled) || errors.Is(errDo, context.DeadlineExceeded) {
+					release()
 					return nil, errDo
 				}
 				lastStatus = 0
@@ -717,6 +773,7 @@ attemptLoop:
 					log.Debugf("antigravity executor: request error on base url %s, retrying with fallback base url: %s", baseURL, baseURLs[idx+1])
 					continue
 				}
+				release()
 				err = errDo
 				return nil, err
 			}
@@ -780,7 +837,8 @@ attemptLoop:
 
 			out := make(chan cliproxyexecutor.StreamChunk)
 			stream = out
-			go func(resp *http.Response) {
+			go func(resp *http.Response, release func()) {
+				defer release()
 				defer close(out)
 				defer func() {
 					if errClose := resp.Body.Close(); errClose != nil {
@@ -823,7 +881,7 @@ attemptLoop:
 				} else {
 					reporter.ensurePublished(ctx)
 				}
-			}(httpResp)
+			}(httpResp, release)
 			return stream, nil
 		}
 
