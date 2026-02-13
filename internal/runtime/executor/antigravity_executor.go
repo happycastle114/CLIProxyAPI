@@ -82,6 +82,14 @@ func NewAntigravityExecutor(cfg *config.Config) *AntigravityExecutor {
 // Identifier returns the executor identifier.
 func (e *AntigravityExecutor) Identifier() string { return antigravityAuthType }
 
+func hasAntigravityProjectID(auth *cliproxyauth.Auth) bool {
+	if auth == nil || auth.Metadata == nil {
+		return false
+	}
+	pid, ok := auth.Metadata["project_id"].(string)
+	return ok && strings.TrimSpace(pid) != ""
+}
+
 func antigravitySlotKey(auth *cliproxyauth.Auth) string {
 	if auth == nil {
 		return "nil"
@@ -1183,8 +1191,7 @@ func (e *AntigravityExecutor) ensureAccessToken(ctx context.Context, auth *clipr
 	expiry := tokenExpiry(auth.Metadata)
 	if accessToken != "" && expiry.After(time.Now().Add(refreshSkew)) {
 		// Ensure project_id is populated even when the token is still valid.
-		// Otherwise requests may fall back to a randomly generated project id.
-		if auth.Metadata != nil && auth.Metadata["project_id"] == nil {
+		if !hasAntigravityProjectID(auth) {
 			ensureCtx := ctx
 			if ensureCtx == nil {
 				ensureCtx = context.Background()
@@ -1297,7 +1304,7 @@ func (e *AntigravityExecutor) ensureAntigravityProjectID(ctx context.Context, au
 		return nil
 	}
 
-	if auth.Metadata["project_id"] != nil {
+	if hasAntigravityProjectID(auth) {
 		return nil
 	}
 
@@ -1353,12 +1360,15 @@ func (e *AntigravityExecutor) buildRequest(ctx context.Context, auth *cliproxyau
 		requestURL.WriteString(url.QueryEscape(alt))
 	}
 
-	// Extract project_id from auth metadata if available
+	// Extract project_id from auth metadata if available.
 	projectID := ""
 	if auth != nil && auth.Metadata != nil {
 		if pid, ok := auth.Metadata["project_id"].(string); ok {
 			projectID = strings.TrimSpace(pid)
 		}
+	}
+	if projectID == "" {
+		return nil, statusErr{code: http.StatusBadRequest, msg: "missing antigravity project_id; please re-login antigravity auth with a valid project"}
 	}
 	payload = geminiToAntigravity(modelName, payload, projectID)
 	payload, _ = sjson.SetBytes(payload, "model", modelName)
