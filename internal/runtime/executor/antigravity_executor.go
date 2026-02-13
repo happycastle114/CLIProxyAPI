@@ -1182,6 +1182,22 @@ func (e *AntigravityExecutor) ensureAccessToken(ctx context.Context, auth *clipr
 	accessToken := metaStringValue(auth.Metadata, "access_token")
 	expiry := tokenExpiry(auth.Metadata)
 	if accessToken != "" && expiry.After(time.Now().Add(refreshSkew)) {
+		// Ensure project_id is populated even when the token is still valid.
+		// Otherwise requests may fall back to a randomly generated project id.
+		if auth.Metadata != nil && auth.Metadata["project_id"] == nil {
+			ensureCtx := ctx
+			if ensureCtx == nil {
+				ensureCtx = context.Background()
+			}
+			if ctxDeadline, ok := ensureCtx.Deadline(); !ok || time.Until(ctxDeadline) > 15*time.Second {
+				var cancel context.CancelFunc
+				ensureCtx, cancel = context.WithTimeout(ensureCtx, 15*time.Second)
+				defer cancel()
+			}
+			if errProject := e.ensureAntigravityProjectID(ensureCtx, auth, accessToken); errProject != nil {
+				log.Warnf("antigravity executor: ensure project id failed: %v", errProject)
+			}
+		}
 		return accessToken, nil, nil
 	}
 	refreshCtx := context.Background()
