@@ -1408,12 +1408,21 @@ func (e *AntigravityExecutor) buildRequest(ctx context.Context, auth *cliproxyau
 	}
 
 	cloakMode, _, sensitiveWords := antigravityCloakConfigFromAuth(auth)
-	if shouldCloak(cloakMode, resolveUserAgent(auth)) {
+	clientUA := resolveUserAgent(auth)
+	if shouldCloak(cloakMode, clientUA) {
 		matcher := buildSensitiveWordMatcher(sensitiveWords)
 		if matcher != nil {
+			before := payloadStr
 			payload = obfuscateAntigravityPayload([]byte(payloadStr), matcher)
 			payloadStr = string(payload)
+			applied := before != payloadStr
+			obfCount := strings.Count(payloadStr, zeroWidthSpace)
+			log.Infof("antigravity cloak: enabled mode=%s words=%d applied=%t obfuscated_markers=%d", cloakMode, len(sensitiveWords), applied, obfCount)
+		} else {
+			log.Warnf("antigravity cloak: enabled mode=%s but matcher is nil (words=%d)", cloakMode, len(sensitiveWords))
 		}
+	} else {
+		log.Debugf("antigravity cloak: skipped mode=%s user_agent=%s", cloakMode, clientUA)
 	}
 
 	httpReq, errReq := http.NewRequestWithContext(ctx, http.MethodPost, requestURL.String(), strings.NewReader(payloadStr))
