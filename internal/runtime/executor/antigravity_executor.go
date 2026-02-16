@@ -109,8 +109,8 @@ func acquireAntigravitySlot(ctx context.Context, auth *cliproxyauth.Auth) (func(
 	antigravitySlotMu.Lock()
 	slot, ok := antigravitySlotPool[key]
 	if !ok {
-		// Default: serialize requests per credential.
-		slot = make(chan struct{}, 1)
+		// Default: allow up to 2 concurrent requests per credential.
+		slot = make(chan struct{}, 2)
 		antigravitySlotPool[key] = slot
 	}
 	antigravitySlotMu.Unlock()
