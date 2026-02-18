@@ -28,7 +28,7 @@ func NewStableIDGenerator() *StableIDGenerator {
 // Returns the full ID (kind:hash) and the short hash portion.
 func (g *StableIDGenerator) Next(kind string, parts ...string) (string, string) {
 	if g == nil {
-		return kind + ":000000000000", "000000000000"
+		return kind + ":anonanonanon", "anonanonanon"
 	}
 	hasher := sha256.New()
 	hasher.Write([]byte(kind))

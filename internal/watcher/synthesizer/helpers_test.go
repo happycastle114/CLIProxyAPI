@@ -98,11 +98,11 @@ func TestStableIDGenerator_NilReceiver(t *testing.T) {
 	var gen *StableIDGenerator = nil
 	id, short := gen.Next("test:kind", "part")
 
-	if id != "test:kind:000000000000" {
-		t.Errorf("expected test:kind:000000000000, got %q", id)
+	if id != "test:kind:anonanonanon" {
+		t.Errorf("expected test:kind:anonanonanon, got %q", id)
 	}
-	if short != "000000000000" {
-		t.Errorf("expected 000000000000, got %q", short)
+	if short != "anonanonanon" {
+		t.Errorf("expected anonanonanon, got %q", short)
 	}
 }
 

@@ -10,8 +10,9 @@ import (
 	"github.com/tidwall/sjson"
 )
 
-// zeroWidthSpace is the Unicode zero-width space character used for obfuscation.
-const zeroWidthSpace = "\u200B"
+// zeroWidthSpace is the Unicode zero-width word joiner used for obfuscation.
+// (Switched from U+200B to U+2060)
+const zeroWidthSpace = "\u2060"
 
 // SensitiveWordMatcher holds the compiled regex for matching sensitive words.
 type SensitiveWordMatcher struct {

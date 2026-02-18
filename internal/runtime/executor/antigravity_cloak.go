@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"regexp"
 	"strings"
 
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v6/sdk/cliproxy/auth"
@@ -30,6 +31,16 @@ func antigravityCloakConfigFromAuth(auth *cliproxyauth.Auth) (string, bool, []st
 	return cloakMode, strictMode, words
 }
 
+func replaceAntigravitySensitiveTerms(text string) string {
+	if strings.TrimSpace(text) == "" {
+		return text
+	}
+
+	// Replace truly sensitive branding terms with provider-neutral wording.
+	re := regexp.MustCompile(`(?i)openclaw|cliproxy|cli-proxy`)
+	return re.ReplaceAllString(text, "Antigravity")
+}
+
 func obfuscateAntigravityPayload(payload []byte, matcher *SensitiveWordMatcher) []byte {
 	if matcher == nil {
 		return payload
@@ -42,7 +53,8 @@ func obfuscateAntigravityPayload(payload []byte, matcher *SensitiveWordMatcher) 
 			text := part.Get("text")
 			if text.Exists() {
 				orig := text.String()
-				obf := matcher.obfuscateText(orig)
+				replaced := replaceAntigravitySensitiveTerms(orig)
+				obf := matcher.obfuscateText(replaced)
 				if obf != orig {
 					path := "request.systemInstruction.parts." + idx.String() + ".text"
 					payload, _ = sjson.SetBytes(payload, path, obf)
@@ -64,7 +76,8 @@ func obfuscateAntigravityPayload(payload []byte, matcher *SensitiveWordMatcher) 
 				text := p.Get("text")
 				if text.Exists() {
 					orig := text.String()
-					obf := matcher.obfuscateText(orig)
+					replaced := replaceAntigravitySensitiveTerms(orig)
+					obf := matcher.obfuscateText(replaced)
 					if obf != orig {
 						path := "request.contents." + ci.String() + ".parts." + pi.String() + ".text"
 						payload, _ = sjson.SetBytes(payload, path, obf)

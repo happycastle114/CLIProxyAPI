@@ -74,7 +74,10 @@ func TestObfuscateAntigravityPayload_AppliesToSystemAndContents(t *testing.T) {
 
 	outStr := string(out)
 	if strings.Contains(outStr, "OpenClaw") || strings.Contains(outStr, "openclaw") || strings.Contains(outStr, "proxy") {
-		t.Fatalf("expected sensitive words to be obfuscated, got: %s", outStr)
+		t.Fatalf("expected sensitive words to be obfuscated/replaced, got: %s", outStr)
+	}
+	if !strings.Contains(outStr, "Antigravity") {
+		t.Fatalf("expected branding terms to be replaced with Antigravity, got: %s", outStr)
 	}
 	if outStr == string(payload) {
 		t.Fatalf("payload should be modified by obfuscation")
