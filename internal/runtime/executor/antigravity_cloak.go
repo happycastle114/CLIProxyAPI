@@ -31,14 +31,26 @@ func antigravityCloakConfigFromAuth(auth *cliproxyauth.Auth) (string, bool, []st
 	return cloakMode, strictMode, words
 }
 
+var antigravityBrandTermsRegex = regexp.MustCompile(`(?i)openclaw|cliproxy|cli-proxy`)
+
+func countAntigravityBrandTerms(text string) int {
+	if strings.TrimSpace(text) == "" {
+		return 0
+	}
+	return len(antigravityBrandTermsRegex.FindAllStringIndex(text, -1))
+}
+
+func hasAntigravityBrandTerms(text string) bool {
+	return countAntigravityBrandTerms(text) > 0
+}
+
 func replaceAntigravitySensitiveTerms(text string) string {
 	if strings.TrimSpace(text) == "" {
 		return text
 	}
 
 	// Replace truly sensitive branding terms with provider-neutral wording.
-	re := regexp.MustCompile(`(?i)openclaw|cliproxy|cli-proxy`)
-	return re.ReplaceAllString(text, "Antigravity")
+	return antigravityBrandTermsRegex.ReplaceAllString(text, "Antigravity")
 }
 
 func obfuscateAntigravityPayload(payload []byte, matcher *SensitiveWordMatcher) []byte {

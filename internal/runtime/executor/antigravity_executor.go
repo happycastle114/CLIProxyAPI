@@ -1413,10 +1413,16 @@ func (e *AntigravityExecutor) buildRequest(ctx context.Context, auth *cliproxyau
 		matcher := buildSensitiveWordMatcher(sensitiveWords)
 		if matcher != nil {
 			before := payloadStr
+			brandBefore := countAntigravityBrandTerms(before)
 			payload = obfuscateAntigravityPayload([]byte(payloadStr), matcher)
 			payloadStr = string(payload)
 			applied := before != payloadStr
 			obfCount := strings.Count(payloadStr, zeroWidthSpace)
+			brandAfter := countAntigravityBrandTerms(payloadStr)
+			brandReplaced := brandBefore - brandAfter
+			if brandReplaced < 0 {
+				brandReplaced = 0
+			}
 
 			// Diagnostics (do not log the sensitive words themselves)
 			authKey := ""
@@ -1438,7 +1444,7 @@ func (e *AntigravityExecutor) buildRequest(ctx context.Context, auth *cliproxyau
 				}
 			}
 
-			log.Infof("antigravity cloak: auth=%s mode=%s (attr_mode=%s has_attrs=%t attr_words=%d) words=%d applied=%t obfuscated_markers=%d", authKey, cloakMode, attrMode, hasAttrs, attrWords, len(sensitiveWords), applied, obfCount)
+			log.Infof("antigravity cloak: auth=%s mode=%s (attr_mode=%s has_attrs=%t attr_words=%d) words=%d applied=%t obfuscated_markers=%d brand_replaced=%d", authKey, cloakMode, attrMode, hasAttrs, attrWords, len(sensitiveWords), applied, obfCount, brandReplaced)
 		} else {
 			log.Warnf("antigravity cloak: enabled mode=%s but matcher is nil (words=%d)", cloakMode, len(sensitiveWords))
 		}
